@@ -1,9 +1,11 @@
 Android Studio 自带的无线调试不稳定，经常断开，这个工具可以自动链接，尤其是手机ip 经常会变的时候。
 
 ### 资源
-[windows 可执行文件](https://github.com/wb-hwang/AutoWifiDebugHelper/releases/download/v0.0.1/reciveAdbAddressServer.exe)
+
+[APP](https://github.com/wb-hwang/AutoWifiDebugHelper/releases/download/v0.0.1/WifiDebugHelper-debug.apk)<br>
+[windows 可执行文件](https://github.com/wb-hwang/AutoWifiDebugHelper/releases/download/v0.0.1/reciveAdbAddressServer.exe)<br>
 [Python 源文件](https://github.com/wb-hwang/AutoWifiDebugHelper/releases/download/v0.0.1/reciveAdbAddressServer.py)
-[APP](https://github.com/wb-hwang/AutoWifiDebugHelper/releases/download/v0.0.1/WifiDebugHelper-debug.apk)
+
 
 ### 原理
 进入tcpip 模式链接，然后监听ip 变化，监听到时上报到PC 端，用python 脚本自动链接
