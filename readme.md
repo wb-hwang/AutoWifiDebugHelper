@@ -16,3 +16,6 @@ Android Studio 自带的无线调试不稳定，经常断开，这个工具可�
 * 链接不上尝试更换端口，5555、5556、5557 等
 * 如果打开APP 后没有看到常驻通知，请给予通知权限
 * 如果没有python 环境，可以使用可执行程序（/python/reciveAdbAddressServer.exe）
+
+![Python 脚本执行结果](https://user-images.githubusercontent.com/8444080/233301794-43ced28f-3516-4694-84ab-9366d8b1eb7a.png)
+![APP页面](https://user-images.githubusercontent.com/8444080/233302137-1868e0c7-86c0-4ad1-abfb-b15369700e48.jpg)
