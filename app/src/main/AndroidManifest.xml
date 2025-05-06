@@ -3,8 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="true"
@@ -19,7 +21,8 @@
         <service
             android:name="com.hwb.wifidebughelper.MyService"
             android:enabled="true"
-            android:exported="true" >
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice" >
         </service>
 
         <activity
