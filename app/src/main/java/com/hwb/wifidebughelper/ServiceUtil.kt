@@ -18,7 +18,7 @@ object ServiceUtil {
         }
     }
 
-    fun bindService(activity: MainListActivity) {
+    fun bindService(activity: MainActivity2) {
         val it = Intent(activity, MyService::class.java)
         activity.bindService(it, conn, BIND_AUTO_CREATE)
     }
