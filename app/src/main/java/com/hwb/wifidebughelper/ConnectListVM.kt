@@ -1,7 +1,11 @@
 package com.hwb.wifidebughelper
 
+import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.hjq.toast.Toaster
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,9 +17,12 @@ class ConnectListVM : ViewModel() {
 
     val _item = mutableStateOf<ConnectData?>(null)
 
+    var isConnect = mutableStateOf(false)
+
     init {
         _items.addAll(ConnectList.getList())
         _item.value = ConnectList.getSelectId()
+        Log.d("ViewModel", "Item updated: ${_item.value}")
     }
     //val items = _items.asStateFlow()
 

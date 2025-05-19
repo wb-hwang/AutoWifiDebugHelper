@@ -53,31 +53,31 @@ import androidx.compose.ui.window.Dialog
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.hjq.toast.Toaster
 import com.hwb.wifidebughelper.ui.theme.WifiDebugHelperTheme
 
 class MainListActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            WifiDebugHelperTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ConstraintLayoutContent(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
-        }
-        ServiceUtil.bindService(this)
-    }
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        enableEdgeToEdge()
+//        setContent {
+//            WifiDebugHelperTheme {
+//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//                    ConstraintLayoutContent(
+//                        modifier = Modifier.padding(innerPadding)
+//                    )
+//                }
+//            }
+//        }
+//        ServiceUtil.bindService(this)
+//    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ConstraintLayoutContent(name: String, modifier: Modifier) {
-    val viewModel = viewModel<ConnectListVM>()
+fun MainListActivity(navController: NavHostController) {
+    val viewModel = viewModel<ConnectListVM>(LocalContext.current as ComponentActivity)
     val context = LocalContext.current
     var showDialog: Boolean by remember { mutableStateOf(false) }
     var changeData: ConnectData? by remember { mutableStateOf(null) }
@@ -95,6 +95,8 @@ fun ConstraintLayoutContent(name: String, modifier: Modifier) {
                 top.linkTo(parent.top, margin = 50.dp)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
+            }.clickable{
+                navController.popBackStack()
             }
         )
 
@@ -142,7 +144,6 @@ fun ConstraintLayoutContent(name: String, modifier: Modifier) {
                         changeData = item
                         showDialog = true
 //                        Toaster.show("onChange")
-
 //                        data[data.indexOf(data.find { it.id == item.id })] = item.copy(title = "Item has change: ${item.id}")
                     }
                 )
@@ -223,7 +224,7 @@ private fun SwipeToDismiss(
 
 @Composable
 fun ConnectItem(connectData: ConnectData?) {
-    val viewModel = viewModel<ConnectListVM>()
+    val viewModel = viewModel<ConnectListVM>(LocalContext.current as ComponentActivity)
     val dismissState = rememberSwipeToDismissBoxState()
     ConstraintLayout(
         modifier = Modifier
@@ -231,7 +232,7 @@ fun ConnectItem(connectData: ConnectData?) {
             .clickable(onClick = {
                 viewModel._item.value = connectData
                 ConnectList.setSelectId(connectData?.id)
-                ServiceUtil.startService(connectData?.serverIp, connectData?.tcpIp)
+                viewModel.isConnect.value = true
             })
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             .background(
@@ -291,7 +292,7 @@ fun ConnectItem(connectData: ConnectData?) {
 
 @Composable
 fun CustomDialog(showDialog: Boolean, data: ConnectData?, onDismiss: () -> Unit) {
-    val viewModel = viewModel<ConnectListVM>()
+    val viewModel = viewModel<ConnectListVM>(LocalContext.current as ComponentActivity)
     if (showDialog) {
         var serverLink by remember { mutableStateOf(if (data == null) "" else data.serverIp) }
         var tcpIpLink by remember { mutableStateOf(if (data == null) "" else data.tcpIp) }
@@ -349,12 +350,12 @@ fun CustomDialog(showDialog: Boolean, data: ConnectData?, onDismiss: () -> Unit)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    WifiDebugHelperTheme {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            ConstraintLayoutContent(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
-        }
-    }
+//    WifiDebugHelperTheme {
+//        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+//            ConstraintLayoutContent(
+//                name = "Android",
+//                modifier = Modifier.padding(innerPadding)
+//            )
+//        }
+//    }
 }
