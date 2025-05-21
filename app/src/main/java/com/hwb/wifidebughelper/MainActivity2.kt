@@ -49,6 +49,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.wifidebughelper.R
+import com.hwb.wifidebughelper.ConnectList.setConnectSwitch
 import com.hwb.wifidebughelper.ui.theme.WifiDebugHelperTheme
 
 @Composable
@@ -119,6 +120,7 @@ fun Main2Activity(navController: NavHostController) {
                     if (viewModel.isConnect.value) {
                         ServiceUtil.startService(viewModel._item.value?.serverIp, viewModel._item.value?.tcpIp)
                     }
+                    setConnectSwitch(viewModel.isConnect.value)
                     // viewModel._item.value = connectData
                     // ConnectList.setSelectId(connectData?.id)
                     // ServiceUtil.startService(connectData?.serverIp, connectData?.tcpIp)
