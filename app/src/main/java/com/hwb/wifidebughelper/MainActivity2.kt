@@ -85,6 +85,7 @@ class MainActivity2 : ComponentActivity() {
 @Composable
 fun Main2Activity(navController: NavHostController) {
     val viewModel = viewModel<ConnectListVM>(LocalContext.current as ComponentActivity)
+    var showHelpDialog by remember { mutableStateOf(false) }
     ConstraintLayout(modifier = Modifier) {
         val (logo, title, connectCard, configCard, itemLog, itemSet, itemHelp, itemAbout) = createRefs()
         Image(
@@ -195,7 +196,7 @@ fun Main2Activity(navController: NavHostController) {
                 }
                 .fillMaxWidth()
                 .clickable {
-
+                    showHelpDialog = true
                 }
                 .padding(start = 26.dp, end = 26.dp, top = 15.dp, bottom = 15.dp),
         )
@@ -212,7 +213,9 @@ fun Main2Activity(navController: NavHostController) {
                 }
                 .padding(start = 26.dp, end = 26.dp, top = 15.dp, bottom = 15.dp),
         )
-
+        if (showHelpDialog) {
+            HelpDialog({ showHelpDialog = false })
+        }
 
     }
 }
