@@ -24,6 +24,7 @@ import com.hwb.wifidebughelper.MainActivity.Companion.SP_KEY_ADB_TCOIP_PORT
 import com.hwb.wifidebughelper.MainActivity.Companion.SP_KEY_SERVER_ADDRESS
 import java.net.Inet4Address
 import androidx.core.content.edit
+import com.hwb.wifidebughelper.ConnectList.getConnectSwitch
 
 class MyService : Service() {
 
@@ -46,12 +47,14 @@ class MyService : Service() {
         object : ConnectivityManager.NetworkCallback() {
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
-                val find = linkProperties.linkAddresses.find { it.address is Inet4Address }
-                find?.address?.hostAddress?.let {
-                    //ip 发生变化，重新上报
-                    if (it != lastIPTemp) {
-                        reportIp(it)
-                        lastIPTemp = it
+                if (getConnectSwitch()) {
+                    val find = linkProperties.linkAddresses.find { it.address is Inet4Address }
+                    find?.address?.hostAddress?.let {
+                        //ip 发生变化，重新上报
+                        if (it != lastIPTemp) {
+                            reportIp(it)
+                            lastIPTemp = it
+                        }
                     }
                 }
             }
@@ -66,7 +69,7 @@ class MyService : Service() {
             val port = getSharedPreferences().getString(SP_KEY_ADB_TCOIP_PORT, DEF_TPICP_PORT)
             val url = "http://$serverAddress/string?address=$ip:$port"
             Log.d("NetworkRequest", "尝试连接URL: $url")
-            
+
             val stringRequest = object : StringRequest(
                 Method.GET,
                 url,
@@ -83,9 +86,9 @@ class MyService : Service() {
                     val errorMsg = if (error.message != null) error.message else "连接失败"
                     val errorClass = error.javaClass.simpleName
                     val errorDetails = "错误类型: $errorClass, 错误信息: $errorMsg"
-                    
+
                     Log.e("NetworkRequest", "请求失败: $errorDetails", error)
-                    
+
                     // 处理服务器错误，尝试获取服务器返回的错误信息
                     if (errorClass.contains("ServerError") && error.networkResponse != null) {
                         try {
@@ -129,7 +132,7 @@ class MyService : Service() {
                     return super.parseNetworkResponse(response)
                 }
             }
-            
+
             queue.add(stringRequest)
         }
     }
@@ -163,12 +166,12 @@ class MyService : Service() {
             .setContentText("ip 监听中")
             .setContentIntent(pendingIntent)
             .build()
-        
+
         // 使用ServiceCompat替代直接调用startForeground
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             ServiceCompat.startForeground(
                 this,
-                1, 
+                1,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
             )

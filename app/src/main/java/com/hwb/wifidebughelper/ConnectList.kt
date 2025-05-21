@@ -5,12 +5,23 @@ import com.tencent.mmkv.MMKV
 object ConnectList {
     const val KEY_CONNECT_LIST = "connect_list"
     const val KEY_CONNECT_SELECT = "connect_select"
+    const val KEY_CONNECT_SWITCH = "connect_switch"
 
 
     enum class ErrorCode {
         SUCCESS,
         KEY_EXIST,
         KEY_NOT_EXIST
+    }
+
+    fun setConnectSwitch(switch: Boolean) {
+        val mmkv = MMKV.mmkvWithID(KEY_CONNECT_SWITCH)
+        mmkv.encode("connect_switch", switch)
+    }
+
+    fun getConnectSwitch(): Boolean {
+        val mmkv = MMKV.mmkvWithID(KEY_CONNECT_SWITCH)
+        return mmkv.decodeBool("connect_switch", false)
     }
 
     fun getSelectId(): ConnectData? {
@@ -20,7 +31,7 @@ object ConnectList {
             return null
         }
         val mmkv2 = MMKV.mmkvWithID(KEY_CONNECT_LIST)
-        return mmkv2.decodeParcelable(selectedId,  ConnectData::class.java)
+        return mmkv2.decodeParcelable(selectedId, ConnectData::class.java)
     }
 
     fun setSelectId(id: String?) {

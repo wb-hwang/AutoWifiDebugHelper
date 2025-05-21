@@ -1,9 +1,6 @@
 package com.hwb.wifidebughelper
 
-import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -29,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -55,7 +51,6 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.hjq.toast.Toaster
-import com.hwb.wifidebughelper.ui.theme.WifiDebugHelperTheme
 
 class MainListActivity : ComponentActivity() {
 //    override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,13 +86,15 @@ fun MainListActivity(navController: NavHostController) {
             "WiFiDebugHelper",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.constrainAs(title) {
-                top.linkTo(parent.top, margin = 50.dp)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-            }.clickable{
-                navController.popBackStack()
-            }
+            modifier = Modifier
+                .constrainAs(title) {
+                    top.linkTo(parent.top, margin = 50.dp)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                }
+                .clickable {
+                    navController.popBackStack()
+                }
         )
 
         Button(
@@ -232,7 +229,9 @@ fun ConnectItem(connectData: ConnectData?) {
             .clickable(onClick = {
                 viewModel._item.value = connectData
                 ConnectList.setSelectId(connectData?.id)
-                viewModel.isConnect.value = true
+                if (viewModel.isConnect.value) {
+                    ServiceUtil.startService(connectData?.serverIp, connectData?.tcpIp)
+                }
             })
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             .background(
