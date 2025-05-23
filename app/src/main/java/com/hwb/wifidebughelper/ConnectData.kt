@@ -10,11 +10,15 @@ import java.util.UUID
 class ConnectData(
     id: String? = UUID.randomUUID().toString(),
     serverIp: String?,
-    tcpIp: String?
+    tcpIp: String? = "5555",
+    name: String? = null,
+    serverPort: String? = "5000"
 ) : Parcelable {
     var id by mutableStateOf(id)
     var serverIp by mutableStateOf(serverIp)
     var tcpIp by mutableStateOf(tcpIp)
+    var name by mutableStateOf(name)
+    var serverPort by mutableStateOf(serverPort)
 
     // 通常返回 0，表示没有特殊标志
     override fun describeContents(): Int = 0
@@ -23,6 +27,8 @@ class ConnectData(
         dest.writeString(id) // 写入 id
         dest.writeString(serverIp) // 写入 serverIp
         dest.writeString(tcpIp) // 写入 tcpIp
+        dest.writeString(name) // 写入 name
+        dest.writeString(serverPort) // 写入 serverPort
     }
 
     companion object CREATOR : Parcelable.Creator<ConnectData> {
@@ -30,7 +36,9 @@ class ConnectData(
             return ConnectData(
                 id = parcel.readString() ?: UUID.randomUUID().toString(), // 读取 id
                 serverIp = parcel.readString(), // 读取 serverIp
-                tcpIp = parcel.readString() // 读取 tcpIp
+                tcpIp = parcel.readString(), // 读取 tcpIp
+                name = parcel.readString(), // 读取 name
+                serverPort = parcel.readString() // 读取 serverPort
             )
         }
 

@@ -43,8 +43,8 @@ class ConnectListVM : ViewModel() {
         }
     }
 
-    fun addItem(serverIp: String?, tcpIp: String?) {
-        ConnectList.add(serverIp, tcpIp) {
+    fun addItem(serverIp: String?, tcpIp: String? = "5555", name: String? = null, serverPort: String? = "5000") {
+        ConnectList.add(serverIp, tcpIp, name, serverPort) {
             when (it.code) {
                 ConnectList.ErrorCode.SUCCESS -> {
                     _items.add(it.data)

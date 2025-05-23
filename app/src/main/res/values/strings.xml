@@ -1,4 +1,22 @@
 <resources>
-    <string name="app_name">WifiDebugHelper</string>
+    <string name="app_name">WiFi调试助手</string>
     <string name="title_activity_main3">MainActivity3</string>
+    
+    <!-- 主界面文本 -->
+    <string name="set_adb_tcpip_port">设置执行adb tcpip对应端口</string>
+    <string name="set_server_address">设置服务器地址</string>
+    <string name="connect">连接</string>
+    <string name="instructions_title">使用说明</string>
+    <string name="instructions">1.将手机用数据线连接到PC\n2.PC执行命令：adb tcpip {端口号，默认：5555}\n3.PC运行对应Python脚本\n4.拔掉数据线，APP设置服务器地址\n5.后续APP会自动监听并连接</string>
+    
+    <!-- 对话框文本 -->
+    <string name="dialog_title_server">设置服务器地址</string>
+    <string name="dialog_title_port">设置adb tcpip对应端口</string>
+    <string name="dialog_placeholder_server">192.168.10.10:5000</string>
+    <string name="dialog_placeholder_port">设置adb tcpip对应端口</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_confirm">确定</string>
+    <string name="toast_success">设置成功</string>
+    <string name="toast_input_server">请输入服务器地址</string>
+    <string name="toast_input_port">请输入adb tcpip对应端口</string>
 </resources>

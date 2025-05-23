@@ -19,9 +19,9 @@ import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.wifidebughelper.R
-import com.hwb.wifidebughelper.MainActivity.Companion.DEF_TPICP_PORT
-import com.hwb.wifidebughelper.MainActivity.Companion.SP_KEY_ADB_TCOIP_PORT
-import com.hwb.wifidebughelper.MainActivity.Companion.SP_KEY_SERVER_ADDRESS
+import com.hwb.wifidebughelper.AppApplication.Companion.DEF_TPICP_PORT
+import com.hwb.wifidebughelper.AppApplication.Companion.SP_KEY_ADB_TCOIP_PORT
+import com.hwb.wifidebughelper.AppApplication.Companion.SP_KEY_SERVER_ADDRESS
 import java.net.Inet4Address
 import androidx.core.content.edit
 
@@ -58,24 +58,27 @@ class MyService : Service() {
         }
 
     private fun reportIp(ip: String) {
-        val serverAddress = getSharedPreferences().getString(SP_KEY_SERVER_ADDRESS, null)
-        if (serverAddress == null) {
-            toast("请先设置服务器地址")
+        // 使用 ConnectList 获取选中的连接数据
+        val selectedData = ConnectList.getSelectId()
+        if (selectedData?.serverIp == null) {
+            toast("请先选择或添加一个服务器配置")
             return
         } else {
-            val port = getSharedPreferences().getString(SP_KEY_ADB_TCOIP_PORT, DEF_TPICP_PORT)
-            val url = "http://$serverAddress/string?address=$ip:$port"
-            Log.d("NetworkRequest", "尝试连接URL: $url")
+            val serverAddress = selectedData.serverIp
+            val serverPort = selectedData.serverPort ?: "5000"
+            val tcpPort = selectedData.tcpIp ?: DEF_TPICP_PORT
+            val url = "http://$serverAddress:$serverPort/string?address=$ip:$tcpPort"
+            ALog.debug("尝试连接URL: $url")
             
             val stringRequest = object : StringRequest(
                 Method.GET,
                 url,
                 { response ->
                     try {
-                        Log.d("NetworkRequest", "请求成功: $response")
+                        ALog.info("请求成功: $response")
                         toast("上报成功：$response")
                     } catch (e: Exception) {
-                        Log.e("NetworkRequest", "解析响应时出错", e)
+                        ALog.error("解析响应时出错", e)
                         toast("解析响应时出错: ${e.message}")
                     }
                 },
@@ -84,13 +87,13 @@ class MyService : Service() {
                     val errorClass = error.javaClass.simpleName
                     val errorDetails = "错误类型: $errorClass, 错误信息: $errorMsg"
                     
-                    Log.e("NetworkRequest", "请求失败: $errorDetails", error)
+                    ALog.error("请求失败: $errorDetails")
                     
                     // 处理服务器错误，尝试获取服务器返回的错误信息
                     if (errorClass.contains("ServerError") && error.networkResponse != null) {
                         try {
                             val serverErrorData = String(error.networkResponse.data)
-                            Log.e("NetworkRequest", "服务器返回错误: $serverErrorData")
+                            ALog.error("服务器返回错误: $serverErrorData")
                             toast("服务器错误: $serverErrorData")
                         } catch (e: Exception) {
                             // 如果无法解析服务器错误信息，则显示一般错误
@@ -124,7 +127,7 @@ class MyService : Service() {
                     // 记录原始响应
                     if (response != null) {
                         val responseData = String(response.data)
-                        Log.d("NetworkRequest", "原始响应: $responseData")
+                        ALog.debug("原始响应: $responseData")
                     }
                     return super.parseNetworkResponse(response)
                 }
@@ -136,7 +139,7 @@ class MyService : Service() {
 
     private fun toast(s: String) {
         Toast.makeText(this, "${getString(R.string.app_name)}:$s", Toast.LENGTH_SHORT).show()
-        Log.d("toast", s)
+        ALog.info(s)
     }
 
     private fun getSharedPreferences(): SharedPreferences {
@@ -151,7 +154,7 @@ class MyService : Service() {
 
         createNotificationChannel()
         val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
+            Intent(this, MainActivity2::class.java).let { notificationIntent ->
                 PendingIntent.getActivity(
                     this, 0, notificationIntent,
                     PendingIntent.FLAG_IMMUTABLE
@@ -175,6 +178,8 @@ class MyService : Service() {
         } else {
             startForeground(1, notification)
         }
+        
+        ALog.info("IP监听服务已启动")
     }
 
     private fun createNotificationChannel() {
@@ -193,24 +198,65 @@ class MyService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder {
+        ALog.debug("服务已绑定")
         return binder
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        ALog.info("IP监听服务已销毁")
     }
 
     class MyBinder(private val service: MyService) : Binder() {
 
+        // 记录上次配置修改的时间戳，用于防止短时间内重复调用
+        private var lastConfigChangeTime = 0L
+        private val DEBOUNCE_TIME = 500 // 防抖时间，毫秒
+
         fun saveServerAddress(address: String) {
-            service.getSharedPreferences().edit { putString(SP_KEY_SERVER_ADDRESS, address) }
-            service.reportIp(service.lastIPTemp)
+            // 检查是否已存在此服务器地址的配置
+            val existingData = ConnectList.getList().find { it?.serverIp == address }
+            if (existingData != null) {
+                // 设置为选中状态
+                ConnectList.setSelectId(existingData.id)
+            } else {
+                // 添加新数据并设置为选中
+                ConnectList.add(serverIp = address) { resp ->
+                    if (resp.code == ConnectList.ErrorCode.SUCCESS) {
+                        ConnectList.setSelectId(resp.data?.id)
+                    }
+                }
+            }
+            // 移除：尝试使用新选择的服务器配置进行上报
+            // service.reportIp(service.lastIPTemp)
         }
 
         fun saveAdbTcpipPort(port: String) {
-            service.getSharedPreferences().edit { putString(SP_KEY_ADB_TCOIP_PORT, port) }
-            service.reportIp(service.lastIPTemp)
+            // 更新当前选中的配置
+            val selectedData = ConnectList.getSelectId()
+            if (selectedData != null) {
+                selectedData.tcpIp = port
+                ConnectList.update(selectedData)
+                // 移除：尝试使用更新的配置进行上报
+                // service.reportIp(service.lastIPTemp)
+            } else {
+                // 如果没有选中的配置，提示用户
+                service.toast("请先选择或添加一个服务器配置")
+            }
         }
 
         //链接
         fun connect() {
-            service.reportIp(service.lastIPTemp)
+            // 添加防抖逻辑
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastConfigChangeTime > DEBOUNCE_TIME) {
+                lastConfigChangeTime = currentTime
+                
+                ALog.info("执行连接请求")
+                service.reportIp(service.lastIPTemp)
+            } else {
+                ALog.info("连接请求被防抖忽略")
+            }
         }
     }
 }

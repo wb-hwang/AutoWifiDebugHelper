@@ -21,6 +21,11 @@
         android:theme="@style/Theme.WifiDebugHelper"
         tools:targetApi="31">
         <activity
+            android:name="com.hwb.wifidebughelper.LogActivity"
+            android:enabled="true"
+            android:exported="false"
+            android:theme="@style/Theme.WifiDebugHelper" />
+        <activity
             android:name="com.hwb.wifidebughelper.MainListActivity"
             android:enabled="true"
             android:exported="true">
@@ -43,11 +48,6 @@
             android:exported="true"
             android:foregroundServiceType="connectedDevice" />
 
-        <activity
-            android:name="com.hwb.wifidebughelper.MainActivity"
-            android:exported="true">
-
-        </activity>
     </application>
 
 </manifest>

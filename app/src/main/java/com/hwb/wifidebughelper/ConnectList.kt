@@ -28,12 +28,12 @@ object ConnectList {
         mmkv.encode("selectedId", id)
     }
 
-    fun add(serverIp: String?, tcpIp: String?, onRes: (BaseResp) -> Unit) {
+    fun add(serverIp: String?, tcpIp: String? = "5555", name: String? = null, serverPort: String? = "5000", onRes: (BaseResp) -> Unit) {
         if (checkListForValue(serverIp)) {
             onRes(BaseResp(ErrorCode.KEY_EXIST, null))
         } else {
             val mmkv = MMKV.mmkvWithID(KEY_CONNECT_LIST)
-            val newData = ConnectData(serverIp = serverIp, tcpIp = tcpIp)
+            val newData = ConnectData(serverIp = serverIp, tcpIp = tcpIp, name = name, serverPort = serverPort)
             mmkv.encode(newData.id, newData)
             onRes(BaseResp(ErrorCode.SUCCESS, newData))
         }
