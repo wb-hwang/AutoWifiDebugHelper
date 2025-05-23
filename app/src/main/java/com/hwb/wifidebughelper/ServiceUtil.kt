@@ -1,12 +1,18 @@
 package com.hwb.wifidebughelper
 
+import android.Manifest
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.hjq.toast.Toaster
 import com.tencent.mmkv.MMKV
 
 object ServiceUtil {
@@ -16,6 +22,9 @@ object ServiceUtil {
     
     // 添加ViewModel引用
     private var viewModel: ConnectListVM? = null
+    
+    // 用于存储待启动的服务请求
+    private var pendingServiceStart: ((Context) -> Unit)? = null
     
     // 设置ViewModel引用
     fun setViewModel(vm: ConnectListVM) {
@@ -68,8 +77,20 @@ object ServiceUtil {
         serviceConnection = conn
     }
 
-    // 从任何Context启动前台服务
-    fun startForegroundService(context: Context) {
+    // 检查通知权限
+    private fun hasNotificationPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+    
+    // 实际启动前台服务的方法
+    private fun actuallyStartForegroundService(context: Context) {
         ALog.info("正在启动前台服务")
         val serviceIntent = Intent(context, MyService::class.java)
         
@@ -79,8 +100,56 @@ object ServiceUtil {
         } else {
             context.startService(serviceIntent)
         }
+    }
+
+    // 从任何Context启动前台服务
+    fun startForegroundService(context: Context) {
+        // 如果不是Activity，我们无法请求权限，只能尝试启动
+        if (context !is Activity) {
+            if (hasNotificationPermission(context)) {
+                actuallyStartForegroundService(context)
+            } else {
+                ALog.warning("非Activity上下文，无法请求通知权限")
+                Toaster.show("请在应用设置中授予通知权限")
+            }
+            return
+        }
         
-        ALog.info("前台服务启动命令已发送")
+        // 检查通知权限
+        if (hasNotificationPermission(context)) {
+            actuallyStartForegroundService(context)
+        } else {
+            // 直接请求权限，而不是通过回调
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                try {
+                    // 检查是否应该显示请求权限的理由
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(context, Manifest.permission.POST_NOTIFICATIONS)) {
+                        Toaster.show("需要通知权限以便在后台运行服务")
+                    }
+                    
+                    // 请求权限
+                    ActivityCompat.requestPermissions(
+                        context,
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        100
+                    )
+                    
+                    // 保存待执行的操作，在MainActivity2的onRequestPermissionsResult中处理
+                    pendingServiceStart = { ctx ->
+                        if (hasNotificationPermission(ctx)) {
+                            actuallyStartForegroundService(ctx)
+                        } else {
+                            Toaster.show("通知权限被拒绝，无法启动前台服务")
+                        }
+                    }
+                } catch (e: Exception) {
+                    ALog.error("请求权限时出错", e)
+                }
+            } else {
+                // Android 13以下不需要通知权限
+                actuallyStartForegroundService(context)
+            }
+        }
     }
 
     // 先启动服务再绑定服务
@@ -90,13 +159,37 @@ object ServiceUtil {
             return
         }
         
-        ALog.info("开始绑定和启动服务")
         isBinding = true
         
-        // 首先启动前台服务
-        startForegroundService(context)
-        
-        // 然后绑定服务
+        // 检查并请求权限，然后启动前台服务
+        if (context is Activity) {
+            if (hasNotificationPermission(context)) {
+                actuallyStartForegroundService(context)
+                bindServiceInternal(context)
+            } else {
+                requestNotificationPermission(context) { granted ->
+                    if (granted) {
+                        actuallyStartForegroundService(context)
+                        bindServiceInternal(context)
+                    } else {
+                        isBinding = false
+                    }
+                }
+            }
+        } else {
+            // 非Activity上下文，尝试直接启动
+            if (hasNotificationPermission(context)) {
+                actuallyStartForegroundService(context)
+                bindServiceInternal(context)
+            } else {
+                Toaster.show("请在应用设置中授予通知权限")
+                isBinding = false
+            }
+        }
+    }
+    
+    // 内部绑定服务方法
+    private fun bindServiceInternal(context: Context) {
         val it = Intent(context, MyService::class.java)
         val bindResult = context.bindService(it, conn, BIND_AUTO_CREATE)
         serviceConnection = conn
@@ -202,5 +295,54 @@ object ServiceUtil {
         } catch (e: Exception) {
             ALog.error("解除服务绑定失败", e)
         }
+    }
+
+    // 请求通知权限
+    private fun requestNotificationPermission(activity: Activity, onPermissionResult: (Boolean) -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // 检查权限状态
+            val hasPermission = hasNotificationPermission(activity)
+            
+            if (hasPermission) {
+                // 已有权限，直接回调
+                onPermissionResult(true)
+                return
+            }
+            
+            try {
+                // 检查是否应该显示请求权限的理由
+                if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)) {
+                    Toaster.show("需要通知权限以便在后台运行服务")
+                }
+                
+                // 保存待执行的回调
+                pendingServiceStart = { ctx ->
+                    onPermissionResult(hasNotificationPermission(ctx))
+                }
+                
+                // 发起权限请求
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    100
+                )
+            } catch (e: Exception) {
+                ALog.error("请求权限时出错", e)
+                onPermissionResult(false)
+            }
+        } else {
+            // Android 13以下不需要请求POST_NOTIFICATIONS权限
+            onPermissionResult(true)
+        }
+    }
+
+    // 处理权限请求的结果
+    fun handlePermissionResult(granted: Boolean, context: Context) {
+        if (granted) {
+            pendingServiceStart?.invoke(context)
+        } else {
+            Toaster.show("通知权限被拒绝，无法启动前台服务")
+        }
+        pendingServiceStart = null
     }
 }

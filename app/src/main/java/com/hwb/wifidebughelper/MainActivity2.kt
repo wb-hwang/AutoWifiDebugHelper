@@ -1,11 +1,17 @@
 package com.hwb.wifidebughelper
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -93,12 +99,61 @@ class MainActivity2 : ComponentActivity() {
             }
         }
         
+        // 先检查并请求通知权限
+        checkNotificationPermission()
+        
         // 先绑定服务
         ServiceUtil.bindService(this)
         
         // 获取ViewModel并设置到ServiceUtil
         val viewModel = ViewModelProvider(this).get(ConnectListVM::class.java)
         ServiceUtil.setViewModel(viewModel)
+    }
+    
+    // 检查通知权限并请求
+    private fun checkNotificationPermission() {
+        // 仅在 Android 13 及以上版本需要请求通知权限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // 检查是否已经有权限
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            
+            if (!hasPermission) {
+                // 如果需要解释权限用途
+                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                        this, 
+                        Manifest.permission.POST_NOTIFICATIONS
+                    )
+                ) {
+                    Toaster.show("需要通知权限以启动前台服务")
+                }
+                
+                // 请求权限
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    100
+                )
+            }
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        
+        if (requestCode == 100) { // 通知权限请求码
+            val granted = grantResults.isNotEmpty() && 
+                         grantResults[0] == PackageManager.PERMISSION_GRANTED
+            
+            // 通知ServiceUtil权限结果
+            ServiceUtil.handlePermissionResult(granted, this)
+        }
     }
     
     override fun onDestroy() {
@@ -164,6 +219,31 @@ fun Main2Activity(navController: NavHostController) {
                     width = Dimension.fillToConstraints
                 }
                 .clickable(onClick = {
+                    // 如果当前未连接，则先检查通知权限，然后再连接
+                    if (!viewModel.isConnect.value) {
+                        // 在Activity中检查通知权限
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val hasPermission = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            if (!hasPermission) {
+                                // 需要请求权限
+                                if (context is Activity) {
+                                    ActivityCompat.requestPermissions(
+                                        context,
+                                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                        100
+                                    )
+                                    // 权限结果在onRequestPermissionsResult中处理
+                                    return@clickable
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 切换连接状态
                     viewModel.isConnect.value = !viewModel.isConnect.value
                     if (viewModel.isConnect.value) {
                         ServiceUtil.startService(viewModel._item.value?.serverIp, viewModel._item.value?.tcpIp)

@@ -38,15 +38,12 @@ class AppApplication : Application() {
                 try {
                     ALog.info("应用启动 - 准备自动启动服务")
                     
-                    // 优先启动前台服务，然后再绑定
-                    ServiceUtil.startForegroundService(this@AppApplication)
-                    
-                    // 延迟一点时间再绑定服务，确保服务已启动
+                    // 给系统一些时间初始化
                     delay(500)
                     
-                    // 绑定服务
+                    // 绑定服务，内部会处理权限
                     ServiceUtil.bindAndStartService(this@AppApplication)
-                    ALog.info("服务自动启动完成")
+                    ALog.info("服务自动启动请求已发送")
                 } catch (e: Exception) {
                     ALog.error("自动启动服务失败", e)
                     Toaster.show("自动启动服务失败: ${e.message}")
